@@ -6,4 +6,17 @@
     </style>
 
     <style name="Theme.Cheese_Chase" parent="Base.Theme.Cheese_Chase" />
+    <style name="AppTheme.Dark" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/design_default_color_primary</item>
+        <item name="colorPrimaryDark">@color/design_default_color_primary_dark</item>
+        <item name="colorAccent">@color/material_dynamic_primary40</item>
+    </style>
+
+    <style name="AppTheme.Light" parent="Theme.AppCompat">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/cardview_dark_background</item>
+        <item name="colorPrimaryDark">@color/material_dynamic_primary95</item>
+        <item name="colorAccent">@color/material_dynamic_primary100</item>
+    </style>
 </resources>

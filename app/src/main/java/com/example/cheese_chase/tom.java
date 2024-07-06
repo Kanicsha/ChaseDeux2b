@@ -2,12 +2,22 @@ package com.example.cheese_chase;
 
 import static android.graphics.BlendMode.COLOR;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.Log;
 
+import java.io.IOException;
+
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class tom {
+    Bitmap bm;
     float x_center,y_center,tom_headY;
     int radius;
     float speed; //to make tom move closer to jerry by decreasing y_center using this factor
@@ -15,7 +25,8 @@ public class tom {
     Paint paint_outline=new Paint();
     int current_track;
 
-    public tom(float x, float y, int r, float s){
+    public tom(Bitmap bm,float x, float y, int r, float s){
+        this.bm=bm;
         x_center=x;
         y_center=y;
         radius=r;
@@ -33,8 +44,9 @@ public class tom {
         paint_outline.setColor(Color.BLACK);
         paint_outline.setStrokeWidth(10);
         paint_outline.setStyle(Paint.Style.STROKE);
-        canvas.drawCircle(x_center,y_center,radius,paint);
-        canvas.drawCircle(x_center,y_center,radius,paint_outline);
+       // canvas.drawCircle(x_center,y_center,radius,paint);
+        //canvas.drawCircle(x_center,y_center,radius,paint_outline);
+        canvas.drawBitmap(bm,x_center,y_center,paint);
     }
     public float getX_center(){
         return x_center;

@@ -1,12 +1,14 @@
 package com.example.cheese_chase;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 
 public class jerry {
 
+    Bitmap bm;
     float x_center,y_center;
     int radius;
     float speed; //to make tom move closer to jerry by decreasing y_center using this factor
@@ -15,7 +17,8 @@ public class jerry {
     int current_track;
 
 
-    public jerry(float x, float y, int r, float s){
+    public jerry(Bitmap bm,float x, float y, int r, float s){
+        this.bm=bm;
         x_center=x;
         y_center=y;
         radius=r;
@@ -32,8 +35,9 @@ public class jerry {
         paint_outline.setColor(Color.BLACK);
         paint_outline.setStrokeWidth(10);
         paint_outline.setStyle(Paint.Style.STROKE);
-        canvas.drawCircle(x_center,y_center,radius,paint);
-        canvas.drawCircle(x_center,y_center,radius,paint_outline);
+        //canvas.drawCircle(x_center,y_center,radius,paint);
+       // canvas.drawCircle(x_center,y_center,radius,paint_outline);
+        canvas.drawBitmap(bm,x_center,y_center,paint);
 
     }
     public float getX_center(){

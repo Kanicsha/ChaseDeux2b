@@ -1,5 +1,8 @@
 package com.example.cheese_chase;
 
+
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -8,6 +11,7 @@ import android.util.Log;
 import java.util.ArrayList;
 
 public class obstacle {
+    Bitmap bm;
     int size;
     Paint paint=new Paint();
     Paint paint_outline=new Paint();
@@ -16,7 +20,8 @@ public class obstacle {
     int current_track;
     float gap_down;
 
-    public obstacle(int size,float left,float top) {
+    public obstacle(Bitmap bm,int size,float left,float top) {
+        this.bm=bm;
         this.size = size;
         this.left=left;
         this.right=left+size;
@@ -34,7 +39,8 @@ public class obstacle {
         paint_outline.setColor(Color.BLACK);
         paint_outline.setStrokeWidth(10);
         paint_outline.setStyle(Paint.Style.STROKE);
-        canvas.drawRect(left,top,right,bottom,paint);
+        //canvas.drawRect(left,top,right,bottom,paint);
+        canvas.drawBitmap(bm,left,top,paint);
         //canvas.drawRect(left,top,right,bottom,paint_outline);
 
 

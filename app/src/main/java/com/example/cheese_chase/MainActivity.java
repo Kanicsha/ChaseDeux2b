@@ -1,11 +1,13 @@
 package com.example.cheese_chase;
 
 import android.annotation.SuppressLint;
+import android.graphics.Bitmap;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
@@ -18,7 +20,7 @@ import androidx.core.view.WindowInsetsCompat;
 public class MainActivity extends AppCompatActivity  {
         TextView tv,score,cheese,disappear;
         boolean yes_choice=false;
-
+    ImageView imageView;
 
 
 
@@ -41,6 +43,7 @@ public class MainActivity extends AppCompatActivity  {
 //            }
 //        });
         cv.setMainActivity(this);
+//        imageView=findViewById(R.id.tommy);
 
 
 
@@ -81,6 +84,9 @@ public class MainActivity extends AppCompatActivity  {
 
    public void onTextChange(String text) {
        tv.setText(text);
+   }
+   public void setImageView(Bitmap bitmap){
+        imageView.setImageBitmap(bitmap);
    }
     public void setDisappear(String text) {
         disappear.setText(text);

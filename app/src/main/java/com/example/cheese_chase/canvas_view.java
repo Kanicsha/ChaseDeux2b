@@ -15,6 +15,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 
@@ -29,6 +30,11 @@ import android.os.Handler;
 
 import androidx.annotation.NonNull;
 
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class canvas_view extends View {
     Paint paint, paint_outline;
     private MediaPlayer mediaPlayer;
@@ -39,11 +45,11 @@ public class canvas_view extends View {
     int max_powe=2;
     int cheeseCollected =0;
 
-    private TextChangeListener tcl;
+
 MainActivity ma;
     jerry j;
     public tom t;
-    int number_obstacles = 10;
+    int number_obstacles = 7;
 
     int obstacle_hit_jerry=0;
     private Runnable gameRunnable;
@@ -61,16 +67,21 @@ MainActivity ma;
     boolean gameover=false;
 
 
-    int[] jerry_tom_center={180,540,900};
+    int[] jerry_tom_center=/*{180,540,900};*/{85, 445, 825};
+    int[] jerry_tom_center1=/*{180,540,900};*/{15, 345, 735};
 
     HashSet<obstacle> hashSet=new HashSet<>();
 
     Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.powerup);
+    Bitmap bm=BitmapFactory.decodeResource(getResources(), R.drawable.mario);
+    Bitmap jerrybm=BitmapFactory.decodeResource(getResources(), R.drawable.mario);
+    Bitmap tombm=BitmapFactory.decodeResource(getResources(), R.drawable.mario);;
     private int score=0;
     cheese cheese;
     trap trap;
 
     private boolean score_deducted=false;
+    ApiService api=ChaseDeuxAPIClient.getClient();
 
 
 
@@ -91,43 +102,171 @@ MainActivity ma;
         this.ma=ma;
     }
 
+
     // the left and top values to place the obstacles right inside the tracks wud be track1:85 track2:495 track 3:855
     //for tom and jerry,d centers will be track1:  2:540,3:
     public void init() {
         paint = new Paint();
         paint_outline = new Paint();
-
-
         paint.setColor(Color.parseColor("#B2FF59"));
         paint_outline.setColor(Color.BLACK);
         paint_outline.setStrokeWidth(20);
         paint_outline.setStyle(Paint.Style.STROKE);
-        j = new jerry((float) 540, 1700, 70, 0);
-        t = new tom((float) 540, 2100, 90, 0);
+        api.getImage("jerry").enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    ResponseBody responseBody=response.body();
+                    byte[] imageBytes= new byte[0];
+                    try {
+                        imageBytes = responseBody.bytes();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                    jerrybm = Bitmap.createScaledBitmap(bitmap, 190, 190, true);
+                   // ma.setImageView(bitmap);
+                    j = new jerry(jerrybm,(float) 445, 1700, 90, 0);
+                }
+
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+
+            }
+        });
+
+
+
+        api.getImage("tom").enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    ResponseBody responseBody=response.body();
+                    byte[] imageBytes= new byte[0];
+                    try {
+                        imageBytes = responseBody.bytes();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                    tombm = Bitmap.createScaledBitmap(bitmap, 350, 350, true);
+
+                    t = new tom(tombm,(float) 120, 2000, 90, 0);
+                }
+
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+
+            }
+        });
+
        addObstacles();
        addBitmap(); //just add them into arraylist now;
         gameover=false;
 
+        //API INTEGRATION USING RETROFIT
+
+        api.getObstacleLimit().enqueue(new Callback<ObstacleLimitResp>() {
+            @Override
+            public void onResponse(Call<ObstacleLimitResp> call, Response<ObstacleLimitResp> response) {
+                max_powe=response.body().getObstacleLimit();
+                Log.i("oLimit","obstLimit: "+max_powe);
+            }
+
+            @Override
+            public void onFailure(Call<ObstacleLimitResp> call, Throwable t) {
+                    Log.e("ERROR","err in getting obstacleLImit");
+            }
+        });
+
+
+
+
+
+
+
+
+
     }
     public void addObstacles(){
-        for (int i = 0; i < number_obstacles; i++) {
-            int track_no = random.nextInt(3);//value between 0 and 2
-            //  Log.i("arrays",left[i]+"  "+top[i]);
-            float top = (float) (Math.random() * (2000 - 1800 + 1) + 1800);
-            // Log.i("random tiop", String.valueOf(top));
+        ApiService api=ChaseDeuxAPIClient.getClient();
+        api.getImage("obstacle").enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    ResponseBody responseBody = response.body();
+                    byte[] imageBytes = new byte[0];
+                    try {
+                        imageBytes = responseBody.bytes();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    float minimum=  0;
+                    Bitmap unresizedBitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                    bm = Bitmap.createScaledBitmap(unresizedBitmap, 100, 100, true);
+                  //  ma.setImageView(bm);
+                    for (int i = 0; i < number_obstacles; i++) {
+                        int track_no = random.nextInt(3);//value between 0 and 2
+                        float top = (float) (Math.random() * (2100 - 100 + 1) + 100);
+                        obstacle obstacle = new obstacle(bm, 90, track_width[track_no], top);
+                        obstacle.current_track = track_no;
+                        if (obstacle.current_track == 1) {
+                            if (obstacle.top > 1500) {
+                                // obstacle.top-=500;
+                            }
+                        }
+                        obstacle.gap_down = 600;
+                        obstacle.speed = 0;
+                        obstacles1.add(obstacle);
+                        //obstacle.increase_speed(-2);
+                    }
+                    for (int i = 2; i < obstacles1.size(); i++) {
+                        obstacle current_obstacle = obstacles1.get(i);
+                        for (int j = i - 1; j >= 0; j--) {
+                            // if (current_obstacle.current_track == obstacles1.get(j).current_track) {
+                            float newTop = obstacles1.get(j).bottom + obstacles1.get(j).gap_down;
+                            float newTop1 = Math.max(newTop, current_obstacle.top);
+                            current_obstacle.setTop(newTop);
+                            //current_obstacle.gap_down+= current_obstacle.bottom;
+                            // break;
+                            // }
+                        }
 
-            obstacle obstacle = new obstacle(90, track_width[track_no], top);
-            obstacle.current_track = track_no;
-            if (obstacle.current_track == 1) {
-                if (obstacle.top > 1500) {
-                    // obstacle.top-=500;
+
+                        for (i = 0; i < obstacles1.size(); i++) {
+                            obstacle obstacle = obstacles1.get(i);
+                            for (int j = 0; j < obstacles1.size(); j++) {
+                                if (i != j && obstacles1.get(j).top<=minimum) {
+                                    minimum=obstacles1.get(j).top;
+                                }
+                            }
+
+                            //  Log.i("end","obstacle croseed!!");
+                            obstacle.setTop(Math.min(minimum-200,obstacle.top));
+                            int track_no = random.nextInt(3);//value between 0 and 2
+                            obstacle.current_track=track_no;
+                            obstacle.setLeft(track_width[track_no]);
+
+
+                        }
+
+                    }
                 }
+
             }
-            obstacle.gap_down = 600;
-            obstacle.speed=0;
-            obstacles1.add(obstacle);
-            //obstacle.increase_speed(-2);
-        }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+
+            }
+        });
+
 //        if (bitmap==null) {
 //            Log.e("Error", "Failed to load bitmap");
 //        }
@@ -135,56 +274,7 @@ MainActivity ma;
 
 
         //generating obstacles with a minimum gap between them in each track
-        for (int i = 1; i < obstacles1.size(); i++) {
-            obstacle current_obstacle = obstacles1.get(i);
-            //   Log.i("obs", obstacles1.get(i - 1).left + " and " + obstacles1.get(i - 1).top + " " + obstacles1.get(i - 1).bottom);
-            //  obstacle_new.setTop(obstacle_new.bottom, obstacles.get(i-1).gap_down);
-            //  if (obstacle_new.current_track==obstacles1.get(i-1).current_track) {
-            //   float newTop = obstacles1.get(i - 1).bottom + obstacles1.get(i - 1).gap_down;
-            for (int j = i - 1; j >= 0; j--) {
-               // if (current_obstacle.current_track == obstacles1.get(j).current_track) {
-                    float newTop = obstacles1.get(j).bottom + obstacles1.get(j).gap_down;
-                    float newTop1 = Math.max(newTop, current_obstacle.top);
-                    current_obstacle.setTop(newTop);
-                    //current_obstacle.gap_down+= current_obstacle.bottom;
-                   // break;
-               // }
-            }
-float minimum=  0;
-//            for (int j = 0; j < obstacles1.size(); j++) {
-//                if (i != j && obstacles1.get(j).top<=minimum) {
-//                    minimum=obstacles1.get(j).top;
-//                    //break;
-//                }
-//            }
-//            if (obstacle.bottom >= 2200) {
-//                //  Log.i("end","obstacle croseed!!");
-//                obstacle.setTop(minimum-200);
-//                int track_no = random.nextInt(3);//value between 0 and 2
-//                obstacle.current_track=track_no;
-//                obstacle.setLeft(track_width[track_no]);
-//
-//            }
-            for (i = 0; i < obstacles1.size(); i++) {
-                obstacle obstacle = obstacles1.get(i);
-                for (int j = 0; j < obstacles1.size(); j++) {
-                    if (i != j && obstacles1.get(j).top<=minimum) {
-                        minimum=obstacles1.get(j).top;
-                    }
-                }
 
-                    //  Log.i("end","obstacle croseed!!");
-                    obstacle.setTop(Math.min(minimum-500,obstacle.top));
-                    int track_no = random.nextInt(3);//value between 0 and 2
-                    obstacle.current_track=track_no;
-                    obstacle.setLeft(track_width[track_no]);
-
-
-            }
-            // obstacle_new.setTop(newTop);
-            //obstacle_new.gap_down = obstacle_new.top + obstacle_new.size;
-
-        }
 
     }
     protected void onAttachedToWindow() {
@@ -271,6 +361,7 @@ float minimum=  0;
     public void createCheese(Canvas canvas) {
         for (int i = 0; i < number_cheese; i++) {
             cheese.create_powerUP(canvas);
+            cheese.speed=0;
            // cheese.increase_speed(speed);
             if (cheese.y_center >= 2100) {
                 cheese.y_center = (float) (Math.random() * (-5000 - 200) + 200);
@@ -301,7 +392,7 @@ float minimum=  0;
     public void createTrap(Canvas canvas) {
         for (int i = 0; i < number_traps; i++) {
             trap.createTrap(canvas);
-          //  trap.increase_speed(speed);
+            trap.speed=0;
 
             if (trap.y_center >= 2100) {
                 trap.y_center = (float) (Math.random() * (-5000 - 200) + 200);
@@ -335,7 +426,7 @@ float minimum=  0;
 
         float top = (float) (Math.random() * (1800 - 100 + 1) + 100);
         int track_no = random.nextInt(3);
-        obstacle obstacle = new obstacle(90, track_width[track_no], top);
+        obstacle obstacle = new obstacle(bm,90, track_width[track_no], top);
         obstacle.current_track = track_no;
 
         int maxAttempts = 100; // adjust this value based on your needs
@@ -388,10 +479,19 @@ boolean stop=false;
                 updateScore();
                 updatePowerUps();
                 for(obstacle obstacle:obstacles1){
-                    obstacle.increase_speed(speed);
+                   // obstacle.increase_speed(speed);
+                }
+                for(cheese cheese1:cheeses){
+                    cheese1.increase_speed(speed);
+                }
+                for(trap trap1:traps){
+                    trap1.increase_speed(speed);
+                }
+                for(powerUp powerUp:powerUps){
+                    powerUp.increase_speed(speed);
                 }
                   t.current_track=j.current_track;
-                  t.x_center=jerry_tom_center[t.current_track];
+                  t.x_center=jerry_tom_center1[t.current_track];
                 if(isTomCollidingWithObstacle(t, obstacles1)){
                     TomdodgeObstacle();
                 }
@@ -460,7 +560,7 @@ boolean stop=false;
            TomdodgeObstacle();
            if(t.current_track!=j.current_track){
                t.current_track=j.current_track;
-               t.x_center=jerry_tom_center[t.current_track];
+               t.x_center=jerry_tom_center1[t.current_track];
            }
        }
        if(isJerryCollidingWithObstacle(j,obstacles1)!=null){
@@ -486,145 +586,42 @@ boolean stop=false;
     }
 
     private void updatePowerUps() {
-        for(powerUp powerUp:powerUps){
-            powerUp.increase_speed(speed);
-            if(powerUp.y_center>=2200){
-                powerUp.y_center=(float) (Math.random()*(-5000+100)+100);
+        for (powerUp powerUp : powerUps) {
+         //   powerUp.increase_speed(speed);
+            if (powerUp.y_center >= 2200) {
+                powerUp.y_center = (float) (Math.random() * (-5000 + 100) + 100);
             }
         }
-        JerryPU(j,powerUps);
-        for(cheese cheese:cheeses) {
-            cheese.increase_speed(speed);
+        JerryPU(j, powerUps);
+        for (cheese cheese : cheeses) {
+           // cheese.increase_speed(speed);
             if (cheese.y_center >= 2200) {
-                cheese.y_center = (float) (Math.random()*(-5000+100)+100);
+                cheese.y_center = (float) (Math.random() * (-5000 + 100) + 100);
             }
         }
-        JerryCheese(j,cheeses);
-        for(trap trap:traps) {
-            trap.increase_speed(speed);
+        JerryCheese(j, cheeses);
+        for (trap trap : traps) {
+          //  trap.increase_speed(speed);
             if (trap.y_center >= 2200) {
-                trap.y_center = (float) (Math.random()*(-5000+100)+100);
+                trap.y_center = (float) (Math.random() * (-5000 + 100) + 100);
             }
         }
-        JerryTrap(j,traps);
-//        if(speed1>-9) speed1-=0.005f;
-//        Log.i("speed1", String.valueOf(speed1));
-//        Log.i("eee", String.valueOf(speed));
+        JerryTrap(j, traps);
     }
-              /* final Handler handler = new Handler();
-                final Runnable runnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        j.increase_speed(0.4F);
-                       updateObstacles();
-                        if (obstacle_hit_jerry < 2) {
-                            // if (isTomCollidingWithObstacle(t, obstacles)) {
-                            //       TomdodgeObstacle();
-
-                            //   }
-
-                            //if(isJerryCollidingWithObstacle(j,obstacles)) {
-                            obstacle_hit_jerry++;
-                            Log.i("HIIT", "jerry hit obstacle " + obstacle_hit_jerry + " times");
-                            if (obstacle_hit_jerry == 1) {
-                                t.increase_speed(2);
-                            } else if (obstacle_hit_jerry == 2) {
-                                t.increase_speed(2);
-                                j.speed -= 1;
-                                gameover = true;
-                                catchJerry();
-                            }
-                            Log.i("HIIT", "gameover:" + gameover);
-                        }
-
-                        //updateRectanglePosition();
-                        handler.postDelayed(this, 30); // 30 milliseconds interval for animation speed
-                        //
-                        //}
-                    }
-
-                    private void updateObstacles() {
-                        for (int i = 0; i < obstacles1.size(); i++) {
-                            obstacle currentObstacle = obstacles1.get(i);
-                            if (currentObstacle.bottom == track_end) {
-                                obstacles1.remove(i); // Remove obstacle from the list
-                                //generate a new obstacle in the top again at a random position
-                                float top = (float) (Math.random() * (1800 - 100 + 1) + 100);
-                                int track_no = random.nextInt(3);//value between 0 and 2
-                                obstacle obstacle = new obstacle(90, track_width[track_no], top);
-                                obstacle.current_track = track_no;
-                                if (obstacle.current_track == 1) {
-                                    if (obstacle.top > 1500) {
-                                        // obstacle.top-=500;
-                                    }
-                                }
-                                obstacle.gap_down = 700;
-                                obstacles1.add(obstacle);
-                                obstacle.increase_speed(-2);
-
-                            }
-                        }
-                        invalidate();
-
-                    }
-                };
-                        handler.post(runnable);
-
-
-*/
 
             private void catchJerry() {
                 t.increase_speed(20);
                 t.current_track=j.current_track;
-                t.x_center=jerry_tom_center[t.current_track];
+                t.x_center=jerry_tom_center1[t.current_track];
                 if(t.y_center==j.y_center){
                     t.setSpeed(0);
                 }
-//                int horizontal_gap = (int) (t.x_center - j.x_center);
-//                int track_difference = t.current_track - j.current_track;
-//                int current_track = t.current_track;
-//                if (track_difference == 1) { //jerry is present in the next adjacent track!
-//                    if ((current_track >= 0) && (current_track < jerry_tom_center.length)) {
-//                        if (current_track < 2) {
-//                            t.x_center = jerry_tom_center[current_track + 1]; // Move to the next track (safe access)
-//                            t.current_track += 1;
-//                        }
-//                    }
-//
-//                } else if (track_difference == 2) {
-//                    if ((current_track >= 0) && (current_track < jerry_tom_center.length)) {
-//                        if (current_track < 1) {
-//                            t.x_center = jerry_tom_center[current_track + 2]; // Move to the next track (safe access)
-//                            t.current_track += 1;
-//                        }
-//                    }
-//                } else if (track_difference == -1) {//jerry is there in the track before his own.
-//                    if ((current_track > 0) && (current_track < jerry_tom_center.length)) {
-//                        if (current_track < 2) {
-//                            t.x_center = jerry_tom_center[current_track - 1]; // Move to the next track (safe access)
-//                            t.current_track += 1;
-//                        }
-//                    }
-//                } else if (track_difference == -2) {//jerry in track0 and tom in track 2 is the only possible case
-//                    if ((current_track > 0) && (current_track < jerry_tom_center.length)) {
-//                        if (current_track < 3) {
-//                            t.x_center = jerry_tom_center[current_track - 2]; // Move to the next track (safe access)
-//                            t.current_track += 1;
-//                        }
-//                    }
-//                }
+
             }
 
 
             @Override
             public boolean onTouchEvent(MotionEvent event) {
-       /* int current_track=-1;
-        for(int i=0; i<jerry_tom_center.length;i++){
-            if (jerry_tom_center[i]==j.x_center){
-                current_track=i;
-                break;
-            }
-        }*/
                 if (first_touch_jerry) {
                     j.increase_speed(10);
                     first_touch_jerry = false;
@@ -699,75 +696,14 @@ boolean stop=false;
                          }
                      }
 
-        // Collision detected
-
-        //  if (jerry.y_center - jerry.radius == obstacle.bottom - (float) obstacle.size / 2) {
-        //    return true;
-        // }
-
-        //    return false; // No collision detected
-
-       /* for (obstacle obstacle : obstacles) {
-            // Check if Tom's x and y coordinates overlap with the obstacle's rectangle
-            boolean jerryCollided = false;
-            if (jerry.current_track == obstacle.current_track) {
-                if ( (int) jerry.y_center - jerry.radius - 1 == (int) obstacle.top)
-                {   // || jerry.y_center - jerry.radius ==(int) obstacle.top ){//&& (int)jerry.x_center==obstacle.left+ (float) obstacle.size /2) {
-                  //  Log.i("j,o",(int)jerry.y_center - jerry.radius+"  "+(int) obstacle.bottom );
-                    return obstacle; // Collision detected
-                }
-                else if ((int)jerry.y_center - jerry.radius  == (int) obstacle.top) {
-                    return obstacle;
-                } else if ((int)jerry.y_center - jerry.radius == obstacle.bottom) {
-                      return obstacle;
-                } else if ( (int)jerry.y_center - jerry.radius +1 == (int)obstacle.top ) {
-                    return obstacle;                } else if ((int)jerry.y_center - jerry.radius -1== (int) obstacle.bottom) {
-                    return obstacle;                  } else if ((int)jerry.y_center+j.radius-1==(int)obstacle.top) {
-                    return obstacle;
-                } else if ( (int)jerry.y_center+j.radius-1==(int)obstacle.bottom ) {
-                    return obstacle;                  } else if ( jerry.y_center-jerry.radius +1 ==(int) obstacle.bottom) {
-                    return obstacle;                  } else if ((int)jerry.y_center+j.radius+1==(int)obstacle.top) {
-                    return obstacle;                  } else if ((int)jerry.y_center-j.radius==(int)obstacle.top+(float) obstacle.size /2) {
-                    return obstacle;                  } else if (jerry.y_center - jerry.radius + 1 == (int) obstacle.top) {
-                    return obstacle;                  } else if ((int)jerry.y_center+j.radius==(int)obstacle.top) {
-                    return obstacle;                  } else if ((int)jerry.y_center+j.radius==(int)obstacle.bottom) {
-                    return obstacle;                  } else if ( (int)jerry.y_center+j.radius+1==(int)obstacle.bottom) {
-                    return obstacle;                  }
-            } else {
-                if (jerry.x_center - jerry.radius == obstacle.right) {
-                    return obstacle;                  } else if (jerry.x_center + jerry.radius == obstacle.left) {
-                    return obstacle;                  } else if (jerry.x_center - jerry.radius == (int) obstacle.right) {
-                    return obstacle;                  } else if (jerry.x_center + jerry.radius == (int) obstacle.left) {
-                    return obstacle;                  }
-            }*/
-
-                  /*  if (tom.current_track == obstacle.current_track) {
-                        if ((tom.x_center == (obstacle.left + (obstacle.size / 2)))) {
-                            Log.i("collision", "detected a collision");
-                            return true;
-                        }
-                    }
-                }*/
-
-//                for (obstacle obstacle : obstacles) {
-//                    // Check if Jerry's x and y coordinates overlap with the obstacle's rectangle
-//                    if (jerry.current_track == obstacle.current_track) {
-//                        if (jerry.y_center - jerry.radius == (int) obstacle.bottom ||
-//                                jerry.y_center - jerry.radius == (int) obstacle.top) {
-//                            if (!jerryCollided) {
-//                                jerryCollided=true;
-//                                return true; // Collision detected
-//                            }
-//                        }
-//                    }
-//
 
 
         return null;
     }
     public void resetGame() {
-        j = new jerry((float) 540, 1600, 70, 0);
-        t = new tom((float) 540, 2100, 90, 0);
+        j = new jerry(jerrybm,(float) 480, 1600, 70, 0);
+        t = new tom(tombm,(float) 300, 2100, 90, 0);
+
         obstacle_hit_jerry = 0;
         score = 0;
         score_deducted = false;
@@ -786,6 +722,7 @@ boolean stop=false;
         addBitmap();
         addCheese();
         addTrap();
+        init();
         runGame();
     }
 public void JerryPU(jerry jerry,ArrayList<powerUp> powerUPs) {
@@ -925,7 +862,7 @@ public void JerryPU(jerry jerry,ArrayList<powerUp> powerUPs) {
                 Float min_of_all = Collections.min(distances);
                 int index = distances.indexOf(min_of_all);
                 if ((current_track >= 0) && (current_track < jerry_tom_center.length)) {
-                    t.x_center=jerry_tom_center[index];
+                    t.x_center=jerry_tom_center1[index];
                     t.current_track=index;
                 }
             }
